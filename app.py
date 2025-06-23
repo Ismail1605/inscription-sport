@@ -9,49 +9,54 @@ st.set_page_config(page_title="Inscriptions Sportives OCP", layout="wide")
 st.markdown("## 🏋️‍♂️ Formulaire d'inscription - Activités sportives OCP")
 st.markdown("---")
 
-# Session state for beneficiaries
 if "beneficiaries" not in st.session_state:
     st.session_state.beneficiaries = []
 
 st.markdown("### 👤 Informations du Collaborateur")
-col1, col2 = st.columns(2)
-with col1:
-    nom_collab = st.text_input("Nom et prénom du collaborateur")
+nom_collab = st.text_input("Nom et prénom du collaborateur")
 
-selected_salle = st.selectbox(
-    "Salle choisie",
-    salles_data,
-    format_func=lambda x: f"{x['Nom']} ({x['Code']})"
-)
-
-st.markdown("#### 📄 Informations sur la salle")
-st.write(f"Discipline : {selected_salle['Discipline']}")
-st.write(f"Catégorie : {selected_salle['Catégorie']}")
-st.write(f"Tarif plein : {selected_salle['Tarif']} DHS")
-st.write(f"Quote-part à payer (50%) : {round(selected_salle['Tarif'] * 0.5, 2)} DHS")
-
-# Gestion des bénéficiaires
 st.markdown("### 👨‍👩‍👧‍👦 Bénéficiaires")
 nb_benef = st.number_input("Nombre de bénéficiaires", min_value=0, max_value=6, step=1)
 
 beneficiaries_data = []
+
+# Liste unique des salles sans doublons
+noms_salles_uniques = sorted(set([s["Nom"] for s in salles_data]))
+
 for i in range(nb_benef):
     with st.expander(f"Bénéficiaire {i+1}"):
         categorie = st.selectbox(f"Catégorie {i+1}", ["Conjoint(e)", "Enfant"], key=f"cat_{i}")
         nom = st.text_input(f"Nom & Prénom", key=f"nom_{i}")
         date_naissance = st.date_input(f"Date de naissance", key=f"date_{i}")
         cnie = st.text_input(f"N° CNIE (si adulte)", key=f"cnie_{i}")
-        quote_part = round(selected_salle['Tarif'] * 0.5, 2)
-        beneficiaries_data.append({
-            "Catégorie": categorie,
-            "Nom Prénom": nom,
-            "Date de naissance": date_naissance,
-            "CNIE": cnie,
-            "Tarif total": selected_salle['Tarif'],
-            "Quote-part": quote_part
-        })
+        salle_choisie = st.selectbox(f"Salle souhaitée", noms_salles_uniques, key=f"salle_{i}")
 
-# Mode de paiement
+        # Déduire catégorie salle
+        cat_recherche = "E" if categorie == "Enfant" else "H & F"
+
+        # Trouver salle correspondante
+        salle_finale = next((s for s in salles_data if s["Nom"] == salle_choisie and s["Catégorie"] == cat_recherche), None)
+
+        if salle_finale:
+            st.write(f"🧾 Code : {salle_finale['Code']}")
+            st.write(f"🎯 Discipline : {salle_finale['Discipline']}")
+            st.write(f"💰 Tarif plein : {salle_finale['Tarif']} DHS")
+            quote_part = round(salle_finale['Tarif'] * 0.5, 2)
+            st.write(f"✅ Quote-part (50%) : {quote_part} DHS")
+
+            beneficiaries_data.append({
+                "Catégorie": categorie,
+                "Nom Prénom": nom,
+                "Date de naissance": date_naissance,
+                "CNIE": cnie,
+                "Nom Salle": salle_finale["Nom"],
+                "Code Salle": salle_finale["Code"],
+                "Discipline": salle_finale["Discipline"],
+                "Tarif total": salle_finale["Tarif"],
+                "Quote-part": quote_part
+            })
+
+# Paiement
 st.markdown("### 💳 Paiement")
 moyen_paiement = st.selectbox("Mode de paiement", ["TPE", "Virement"])
 preuve_virement = ""
@@ -67,8 +72,6 @@ if st.button("✅ Valider l'inscription"):
         "Date": date_now,
         "Dossier n°": dossier_num,
         "Collaborateur": nom_collab,
-        "Salle": selected_salle["Nom"],
-        "Code Salle": selected_salle["Code"],
         "Total Quote-part": total_quote,
         "Nombre bénéficiaires": nb_benef,
         "Mode de paiement": moyen_paiement,
