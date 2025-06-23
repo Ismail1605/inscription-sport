@@ -1,3 +1,4 @@
+from salles_data import salles_data
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -11,8 +12,15 @@ if "beneficiaries" not in st.session_state:
 
 st.header("Informations du Collaborateur")
 nom_collab = st.text_input("Nom et prénom du collaborateur")
-salle = st.selectbox("Salle choisie", ["Salle 1 - Fitness", "Salle 2 - Natation", "Salle 3 - Musculation"])
-code_salle = st.text_input("Code de la discipline (fourni par salle)")
+selected_salle = st.selectbox(
+    "Salle choisie",
+    salles_data,
+    format_func=lambda x: f"{x['Nom']} ({x['Code']})"
+)
+
+st.write(f"Discipline : {selected_salle['Discipline']}")
+st.write(f"Catégorie : {selected_salle['Catégorie']}")
+st.write(f"Tarif plein : {selected_salle['Tarif']} DHS")
 
 # Gestion des bénéficiaires
 st.subheader("Bénéficiaires")
@@ -54,8 +62,8 @@ if st.button("Valider l'inscription"):
         "Date": date_now,
         "Dossier n°": dossier_num,
         "Collaborateur": nom_collab,
-        "Salle": salle,
-        "Code Salle": code_salle,
+        "Salle": selected_salle["Nom"],
+        "Code Salle": selected_salle["Code"],
         "Total Quote-part": total_quote,
         "Nombre bénéficiaires": nb_benef,
         "Mode de paiement": moyen_paiement,
