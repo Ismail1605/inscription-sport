@@ -4,23 +4,31 @@ import pandas as pd
 from datetime import datetime
 import os
 
+# Configuration Streamlit
 st.set_page_config(page_title="Inscriptions Sportives OCP", layout="wide")
 
-st.markdown("## 🏋️‍♂️ Formulaire d'inscription - Activités sportives OCP")
+# Logo + Titre
+col1, col2 = st.columns([1, 10])
+with col1:
+    st.image("ocp_logo.png", width=100)
+with col2:
+    st.markdown("## <span style='color:#1a8d1a'>Formulaire d'inscription - Activités sportives OCP</span>", unsafe_allow_html=True)
+
 st.markdown("---")
 
+# Initialisation session
 if "beneficiaries" not in st.session_state:
     st.session_state.beneficiaries = []
 
+# Informations collaborateur
 st.markdown("### 👤 Informations du Collaborateur")
 nom_collab = st.text_input("Nom et prénom du collaborateur")
 
+# Bénéficiaires
 st.markdown("### 👨‍👩‍👧‍👦 Bénéficiaires")
 nb_benef = st.number_input("Nombre de bénéficiaires", min_value=0, max_value=6, step=1)
 
 beneficiaries_data = []
-
-# Liste unique des salles sans doublons
 noms_salles_uniques = sorted(set([s["Nom"] for s in salles_data]))
 
 for i in range(nb_benef):
@@ -31,15 +39,11 @@ for i in range(nb_benef):
         cnie = st.text_input(f"N° CNIE (si adulte)", key=f"cnie_{i}")
         salle_choisie = st.selectbox(f"Salle souhaitée", noms_salles_uniques, key=f"salle_{i}")
 
-        # Déduire catégorie salle
         cat_recherche = "E" if categorie == "Enfant" else "H & F"
-
-        # Trouver salle correspondante
         salle_finale = next((s for s in salles_data if s["Nom"] == salle_choisie and s["Catégorie"] == cat_recherche), None)
 
         if salle_finale:
-            st.write(f"🧾 Code : {salle_finale['Code']}")
-            st.write(f"🎯 Discipline : {salle_finale['Discipline']}")
+            st.success(f"Code : {salle_finale['Code']} | Discipline : {salle_finale['Discipline']}")
             st.write(f"💰 Tarif plein : {salle_finale['Tarif']} DHS")
             quote_part = round(salle_finale['Tarif'] * 0.5, 2)
             st.write(f"✅ Quote-part (50%) : {quote_part} DHS")
@@ -63,6 +67,7 @@ preuve_virement = ""
 if moyen_paiement == "Virement":
     preuve_virement = st.text_input("Justificatif du virement (ex: numéro de virement ou fichier PDF transmis)")
 
+# Validation
 if st.button("✅ Valider l'inscription"):
     date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     dossier_num = int(datetime.now().timestamp())
